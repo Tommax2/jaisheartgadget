@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import axios from '../lib/api.js';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,6 +49,19 @@ const SellPage = ({ onBack }) => {
   const [savedReceipt, setSavedReceipt] = useState(null);
   const [loading,  setLoading]  = useState(false);
   const printRef = useRef();
+  const receiptKey = user?.id ? `jhg:lastReceipt:${user.id}` : null;
+
+  useEffect(() => {
+    if (!receiptKey || savedReceipt) return;
+    const raw = localStorage.getItem(receiptKey);
+    if (!raw) return;
+    try { setSavedReceipt(JSON.parse(raw)); } catch {}
+  }, [receiptKey]);
+
+  useEffect(() => {
+    if (!receiptKey || !savedReceipt) return;
+    localStorage.setItem(receiptKey, JSON.stringify(savedReceipt));
+  }, [receiptKey, savedReceipt]);
 
   useEffect(() => { fetchProducts(); }, []);
 
@@ -56,7 +69,7 @@ const SellPage = ({ onBack }) => {
     try {
       const res = await axios.get('/api/products');
       setProducts(res.data.filter(p => p.quantity > 0));
-    } catch { toast.error('Failed to load gadgets'); }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to load gadgets'); }
   };
 
   const addToCart = (item) => {
@@ -108,7 +121,7 @@ const SellPage = ({ onBack }) => {
       });
       setSavedReceipt(res.data);
       toast.success('Receipt generated!');
-    } catch { toast.error('Failed to generate receipt'); }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to generate receipt'); }
     finally   { setLoading(false); }
   };
 
@@ -198,7 +211,13 @@ const SellPage = ({ onBack }) => {
           </motion.div>
 
           <motion.div className="receipt-actions" variants={sectionVariants}>
-            <button className="btn-ghost" onClick={() => { setSavedReceipt(null); setCart([]); setCustomer({ name: '', phone: '' }); setDiscount(0); }}>
+            <button className="btn-ghost" onClick={() => {
+              if (receiptKey) localStorage.removeItem(receiptKey);
+              setSavedReceipt(null);
+              setCart([]);
+              setCustomer({ name: '', phone: '' });
+              setDiscount(0);
+            }}>
               ← New Receipt
             </button>
             <button className="btn-primary" onClick={handlePrint}>🖨️ Print Receipt</button>

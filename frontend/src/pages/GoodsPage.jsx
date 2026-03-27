@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../lib/api.js';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['Phones', 'Laptops', 'Tablets', 'TVs', 'Audio', 'Accessories', 'Gaming', 'Cameras', 'Other'];
