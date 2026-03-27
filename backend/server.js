@@ -150,7 +150,7 @@ app.post('/api/auth/register', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, username: user.username, shopName: user.shopName, address: user.address, phone: user.phone } });
   } catch (err) {
-    console.error('âŒ Register error:', err);
+    console.error('Register error:', err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -164,14 +164,19 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, username: user.username, shopName: user.shopName, address: user.address, phone: user.phone } });
   } catch (err) {
-    console.error('âŒ Login error:', err);
+    console.error('Login error:', err);
     res.status(500).json({ message: err.message });
   }
 });
 
 // ─── Products Routes ──────────────────────────────────────
 app.get('/api/products', auth, async (req, res) => {
-  res.json(await Product.find({ userId: req.userId }).sort({ createdAt: -1 }));
+  try {
+    res.json(await Product.find({ userId: req.userId }).sort({ createdAt: -1 }));
+  } catch (err) {
+    console.error('Products list error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.post('/api/products', auth, async (req, res) => {
@@ -205,27 +210,45 @@ app.post('/api/receipts', auth, async (req, res) => {
     const receiptNumber = `INV-${String(count + 1).padStart(5, '0')}`;
     const receipt = await Receipt.create({ userId: req.userId, receiptNumber, ...req.body });
     res.json(receipt);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    console.error('Receipt create error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.get('/api/receipts', auth, async (req, res) => {
-  res.json(await Receipt.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(100));
+  try {
+    res.json(await Receipt.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(100));
+  } catch (err) {
+    console.error('Receipts list error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // ─── Dashboard Stats ──────────────────────────────────────
 app.get('/api/stats', auth, async (req, res) => {
-  const [products, receipts] = await Promise.all([
-    Product.find({ userId: req.userId }),
-    Receipt.find({ userId: req.userId })
-  ]);
-  res.json({
-    totalItems:     products.length,
-    totalStock:     products.reduce((s, p) => s + p.quantity, 0),
-    inventoryValue: products.reduce((s, p) => s + p.price * p.quantity, 0),
-    totalSales:     receipts.reduce((s, r) => s + r.total, 0),
-    lowStock:       products.filter(p => p.quantity < 3).length,
-    totalReceipts:  receipts.length
-  });
+  try {
+    const [products, receipts] = await Promise.all([
+      Product.find({ userId: req.userId }),
+      Receipt.find({ userId: req.userId })
+    ]);
+    res.json({
+      totalItems:     products.length,
+      totalStock:     products.reduce((s, p) => s + p.quantity, 0),
+      inventoryValue: products.reduce((s, p) => s + p.price * p.quantity, 0),
+      totalSales:     receipts.reduce((s, r) => s + r.total, 0),
+      lowStock:       products.filter(p => p.quantity < 3).length,
+      totalReceipts:  receipts.length
+    });
+  } catch (err) {
+    console.error('Stats error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ message: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
