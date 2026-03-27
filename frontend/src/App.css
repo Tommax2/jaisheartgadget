@@ -196,9 +196,15 @@ body::before {
 /* ── LOGIN PAGE ────────────────────────────────────────────── */
 .login-page {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
-  background: var(--bg);
+  padding: clamp(18px, 4vw, 44px);
+  background:
+    radial-gradient(1200px 700px at 10% 0%, rgba(0,212,255,0.14), transparent 55%),
+    radial-gradient(900px 650px at 110% 10%, rgba(124,58,237,0.14), transparent 55%),
+    radial-gradient(700px 520px at 55% 110%, rgba(0,229,160,0.10), transparent 55%),
+    linear-gradient(180deg, #070712 0%, #0b0b18 100%);
 }
 
 .login-bg-grid {
@@ -223,7 +229,7 @@ body::before {
 .login-shell {
   width: min(1020px, 92vw);
   display: grid;
-  grid-template-columns: 1fr 460px;
+  grid-template-columns: 1fr minmax(340px, 460px);
   border-radius: calc(var(--radius-lg) + 6px);
   overflow: hidden;
   border: 1px solid rgba(48, 48, 64, 0.7);
@@ -271,11 +277,12 @@ body::before {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-wrap: wrap;
 }
 
 .login-left-logo {
-  width: 56px;
-  height: 56px;
+  width: clamp(44px, 8vw, 56px);
+  height: clamp(44px, 8vw, 56px);
   border-radius: 16px;
   object-fit: cover;
   border: 1px solid rgba(0,212,255,0.26);
@@ -283,7 +290,7 @@ body::before {
 }
 
 .login-left-brand h1 {
-  font-size: 26px;
+  font-size: clamp(20px, 3vw, 26px);
   font-weight: 800;
   letter-spacing: -0.5px;
   margin-bottom: 2px;
@@ -965,6 +972,8 @@ textarea:focus-visible {
   .app-main { padding: 14px 12px; }
   .login-left { padding: 22px 14px; }
   .login-card { padding: 22px 14px; }
+  .login-card-head { flex-direction: column; align-items: flex-start; }
+  .brand-icon { width: 46px; height: 46px; border-radius: 12px; }
   .nav-avatar { display: none; }
   .btn-logout { padding: 6px 10px; }
   .search-input { max-width: 100%; }
