@@ -6,12 +6,32 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+const allowList = String(process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowList.length === 0) return cb(null, true);
+    return cb(null, allowList.includes(origin));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/techstoredb';
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_in_production';
 const PORT       = process.env.PORT       || 5000;
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, mongoReadyState: mongoose.connection.readyState });
+});
 
 // ─── Schemas ──────────────────────────────────────────────
 const UserSchema = new mongoose.Schema({
@@ -99,7 +119,7 @@ const ensureAdminUser = async () => {
   if (shouldReset || existing.isModified()) await existing.save();
 };
 
-mongoose.connect(MONGO_URI)
+mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(async () => {
     console.log('✅ MongoDB connected');
     await ensureAdminUser();
@@ -129,7 +149,10 @@ app.post('/api/auth/register', async (req, res) => {
     const user = await User.create({ username, password: hashed, shopName: shopName || (process.env.SHOP_NAME || 'JaisHeart Gadget'), address: address || '', phone: phone || '' });
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, username: user.username, shopName: user.shopName, address: user.address, phone: user.phone } });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    console.error('âŒ Register error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -140,7 +163,10 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, username: user.username, shopName: user.shopName, address: user.address, phone: user.phone } });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    console.error('âŒ Login error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // ─── Products Routes ──────────────────────────────────────
