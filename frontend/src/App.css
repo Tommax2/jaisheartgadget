@@ -759,10 +759,10 @@ textarea:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;        /* allow flex shrink */
-  overflow: hidden;     /* panel itself does NOT scroll */
+  position: sticky;
+  top: 74px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
 }
 
 .cart-head {
@@ -791,7 +791,6 @@ textarea:focus-visible {
   margin-bottom: 16px;
   overflow-y: auto;     /* items scroll if too many */
   max-height: 240px;    /* cap height so summary is always visible */
-  flex-shrink: 0;
 }
 
 .cart-item {
@@ -812,11 +811,10 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex-shrink: 0;       /* NEVER shrink — always visible */
-  overflow-y: auto;     /* scroll internally if screen is tiny */
+  color: var(--text);
 }
 
-.summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); }
+.summary-row { display: flex; justify-content: space-between; font-size: 13px; color: rgba(232,232,240,0.78); }
 .summary-row.discount { color: var(--green); }
 
 .summary-input-row {
