@@ -499,6 +499,7 @@ textarea:focus-visible {
 /* ── BUTTONS ───────────────────────────────────────────────── */
 .btn-primary {
   background-image: var(--accent-grad);
+  background-color: var(--accent);
   background-size: 160% 160%;
   background-position: 0% 50%;
   color: #000;
@@ -791,6 +792,7 @@ textarea:focus-visible {
   margin-bottom: 16px;
   overflow-y: auto;     /* items scroll if too many */
   max-height: 240px;    /* cap height so summary is always visible */
+  padding-bottom: 12px;
 }
 
 .cart-item {
@@ -812,6 +814,11 @@ textarea:focus-visible {
   flex-direction: column;
   gap: 8px;
   color: var(--text);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(17,17,24,0) 0%, rgba(17,17,24,0.92) 18%, rgba(17,17,24,0.98) 100%);
+  padding-bottom: 10px;
 }
 
 .summary-row { display: flex; justify-content: space-between; font-size: 13px; color: rgba(232,232,240,0.78); }
