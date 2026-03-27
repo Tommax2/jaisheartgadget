@@ -1,0 +1,320 @@
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext.jsx';
+
+const CATEGORY_ICONS = {
+  Phones: '📱', Laptops: '💻', Tablets: '📲', TVs: '📺',
+  Audio: '🎧', Accessories: '🔌', Gaming: '🎮', Cameras: '📷', Other: '⚙️'
+};
+
+const PAY_METHODS = ['Cash', 'Bank Transfer', 'POS / Card', 'Mobile Money'];
+
+const SellPage = ({ onBack }) => {
+  const { user } = useAuth();
+  const [products, setProducts] = useState([]);
+  const [cart,     setCart]     = useState([]);
+  const [search,   setSearch]   = useState('');
+  const [catFilter, setCatFilter] = useState('All');
+  const [taxRate,  setTaxRate]  = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [payMethod, setPayMethod] = useState('Cash');
+  const [customer, setCustomer] = useState({ name: '', phone: '' });
+  const [savedReceipt, setSavedReceipt] = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const printRef = useRef();
+
+  useEffect(() => { fetchProducts(); }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get('/api/products');
+      setProducts(res.data.filter(p => p.quantity > 0));
+    } catch { toast.error('Failed to load gadgets'); }
+  };
+
+  const addToCart = (item) => {
+    const existing = cart.find(c => c._id === item._id);
+    if (existing) {
+      if (existing.sellQty >= item.quantity) return toast.error('Insufficient stock');
+      setCart(cart.map(c => c._id === item._id ? { ...c, sellQty: c.sellQty + 1 } : c));
+    } else {
+      setCart([...cart, { ...item, sellQty: 1 }]);
+    }
+    toast.success(`${item.name} added`, { duration: 700, icon: '✅' });
+  };
+
+  const updateQty = (id, val) => {
+    const good = products.find(g => g._id === id);
+    if (val < 1) return removeFromCart(id);
+    if (val > good.quantity) return toast.error('Exceeds available stock');
+    setCart(cart.map(c => c._id === id ? { ...c, sellQty: val } : c));
+  };
+
+  const removeFromCart = (id) => setCart(cart.filter(c => c._id !== id));
+
+  const subtotal     = cart.reduce((s, c) => s + c.price * c.sellQty, 0);
+  const discountAmt  = Math.min(discount, subtotal);
+  const taxable      = subtotal - discountAmt;
+  const taxAmt       = taxable * (taxRate / 100);
+  const total        = taxable + taxAmt;
+
+  const categories = ['All', ...new Set(products.map(p => p.category))];
+  const filtered   = products.filter(p => {
+    const q = search.toLowerCase();
+    return (p.name.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q)) &&
+           (catFilter === 'All' || p.category === catFilter);
+  });
+
+  const handleGenerate = async () => {
+    if (cart.length === 0) return toast.error('Add at least one item');
+    setLoading(true);
+    try {
+      const items = cart.map(c => ({
+        productId: c._id,
+        name: c.name, brand: c.brand, model: c.model,
+        price: c.price, quantity: c.sellQty,
+        subtotal: c.price * c.sellQty, warranty: c.warranty
+      }));
+      const res = await axios.post('/api/receipts', {
+        customerName: customer.name, customerPhone: customer.phone,
+        items, subtotal, discount: discountAmt, tax: taxAmt, taxRate, total, payMethod
+      });
+      setSavedReceipt(res.data);
+      toast.success('Receipt generated!');
+    } catch { toast.error('Failed to generate receipt'); }
+    finally   { setLoading(false); }
+  };
+
+  const handlePrint = () => {
+    const html = printRef.current.innerHTML;
+    const w = window.open('', '_blank');
+    w.document.write(`
+      <!DOCTYPE html><html><head><title>Receipt ${savedReceipt.receiptNumber}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; width: 320px; margin: 0 auto; padding: 24px 16px; background: #fff; color: #111; }
+        .r-header { text-align: center; margin-bottom: 12px; }
+        .r-shop   { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+        .r-addr   { font-size: 11px; color: #555; margin-top: 2px; }
+        .r-divider{ border: none; border-top: 1px dashed #aaa; margin: 10px 0; }
+        .r-meta   { font-size: 11px; display: flex; justify-content: space-between; margin: 3px 0; }
+        .r-item   { margin: 6px 0; }
+        .r-item-name { font-size: 13px; font-weight: 600; }
+        .r-item-sub  { display: flex; justify-content: space-between; font-size: 12px; color: #444; }
+        .r-warranty  { font-size: 10px; color: #888; }
+        .r-summary   { font-size: 13px; }
+        .r-row    { display: flex; justify-content: space-between; margin: 3px 0; }
+        .r-total  { font-size: 16px; font-weight: bold; border-top: 1px solid #000; padding-top: 6px; margin-top: 6px; }
+        .r-footer { text-align: center; font-size: 10px; color: #666; margin-top: 16px; line-height: 1.6; }
+      </style></head><body>${html}</body></html>
+    `);
+    w.document.close();
+    w.print();
+  };
+
+  const fmt  = n => Number(n).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+  const now  = new Date(savedReceipt?.createdAt || Date.now());
+  const dateStr = now.toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+
+  // ── Receipt view ──────────────────────────────────────────
+  if (savedReceipt) {
+    return (
+      <div className="sell-page">
+        <div className="receipt-container">
+          <div className="receipt-paper" ref={printRef}>
+            <div className="r-header">
+              <div className="r-shop">⚡ {user?.shopName || 'JaisHeart Gadget'}</div>
+              {user?.address && <div className="r-addr">{user.address}</div>}
+              {user?.phone   && <div className="r-addr">Tel: {user.phone}</div>}
+            </div>
+
+            <hr className="r-divider" />
+
+            <div className="r-meta"><span>Invoice:</span><strong>{savedReceipt.receiptNumber}</strong></div>
+            <div className="r-meta"><span>Date:</span><span>{dateStr} {timeStr}</span></div>
+            {savedReceipt.customerName  && <div className="r-meta"><span>Customer:</span><span>{savedReceipt.customerName}</span></div>}
+            {savedReceipt.customerPhone && <div className="r-meta"><span>Phone:</span><span>{savedReceipt.customerPhone}</span></div>}
+            <div className="r-meta"><span>Payment:</span><span>{savedReceipt.payMethod}</span></div>
+
+            <hr className="r-divider" />
+
+            {savedReceipt.items.map((item, i) => (
+              <div key={i} className="r-item">
+                <div className="r-item-name">{item.brand ? `${item.brand} ` : ''}{item.name}</div>
+                {item.model && <div className="r-warranty">Model: {item.model}</div>}
+                <div className="r-item-sub">
+                  <span>{item.quantity} × ₦{fmt(item.price)}</span>
+                  <strong>₦{fmt(item.subtotal)}</strong>
+                </div>
+                {item.warranty && item.warranty !== 'No warranty' && (
+                  <div className="r-warranty">Warranty: {item.warranty}</div>
+                )}
+              </div>
+            ))}
+
+            <hr className="r-divider" />
+
+            <div className="r-summary">
+              <div className="r-row"><span>Subtotal</span><span>₦{fmt(savedReceipt.subtotal)}</span></div>
+              {savedReceipt.discount > 0 && <div className="r-row discount-row"><span>Discount</span><span>-₦{fmt(savedReceipt.discount)}</span></div>}
+              {savedReceipt.tax > 0      && <div className="r-row"><span>VAT ({savedReceipt.taxRate}%)</span><span>₦{fmt(savedReceipt.tax)}</span></div>}
+              <div className="r-row r-total"><span>TOTAL</span><span>₦{fmt(savedReceipt.total)}</span></div>
+            </div>
+
+            <hr className="r-divider" />
+            <div className="r-footer">
+              Thank you for shopping with us!<br />
+              Goods sold are not returnable without receipt.<br />
+              {user?.shopName || 'JaisHeart Gadget'} — Your trusted gadget partner
+            </div>
+          </div>
+
+          <div className="receipt-actions">
+            <button className="btn-ghost" onClick={() => { setSavedReceipt(null); setCart([]); setCustomer({ name: '', phone: '' }); setDiscount(0); }}>
+              ← New Receipt
+            </button>
+            <button className="btn-primary" onClick={handlePrint}>🖨️ Print Receipt</button>
+            <button className="btn-ghost" onClick={onBack}>Gadgets</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Sell view ─────────────────────────────────────────────
+  return (
+    <div className="sell-page">
+      <div className="page-header">
+        <div>
+          <h2>New Receipt</h2>
+          <span className="subtitle">Click gadgets to add to cart</span>
+        </div>
+        <button className="btn-ghost" onClick={onBack}>← Gadgets</button>
+      </div>
+
+      <div className="sell-layout">
+        {/* Left: Product Grid */}
+        <div className="products-panel">
+          <div className="sell-toolbar">
+            <input className="search-input" placeholder="🔍 Search gadgets…" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <div className="cat-pills" style={{ marginBottom: 16 }}>
+            {categories.map(c => (
+              <button key={c} className={`pill ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>
+                {CATEGORY_ICONS[c] || ''} {c}
+              </button>
+            ))}
+          </div>
+          <div className="product-grid">
+            {filtered.map(p => (
+              <div key={p._id} className="product-tile" onClick={() => addToCart(p)}>
+                <div className="tile-cat-icon">{CATEGORY_ICONS[p.category] || '⚙️'}</div>
+                <div className="tile-name">{p.name}</div>
+                {p.brand && <div className="tile-brand">{p.brand} {p.model}</div>}
+                <div className="tile-price">₦{Number(p.price).toLocaleString()}</div>
+                <div className="tile-stock">{p.quantity} in stock</div>
+                <div className="tile-add">+ Add</div>
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div className="empty-state" style={{ gridColumn: '1/-1', padding: '40px 0' }}>
+                <div className="empty-icon">📦</div>
+                <p>No available gadgets</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Cart */}
+        <div className="cart-panel">
+          <div className="cart-head">
+            <h3>Cart {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}</h3>
+          </div>
+
+          {/* Customer info */}
+          <div className="customer-section">
+            <div className="field-row tight">
+              <div className="field">
+                <label>Customer Name</label>
+                <input placeholder="Optional" value={customer.name} onChange={e => setCustomer(c => ({ ...c, name: e.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Phone</label>
+                <input placeholder="080XXXXXXXX" value={customer.phone} onChange={e => setCustomer(c => ({ ...c, phone: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+
+          {cart.length === 0 ? (
+            <div className="empty-cart">
+              <div style={{ fontSize: 48 }}>🛒</div>
+              <p>Click gadgets to add them here</p>
+            </div>
+          ) : (
+            <>
+              <div className="cart-items">
+                {cart.map(item => (
+                  <div key={item._id} className="cart-item">
+                    <div className="cart-item-top">
+                      <span className="cart-item-name">{item.name}</span>
+                      <button className="remove-btn" onClick={() => removeFromCart(item._id)}>×</button>
+                    </div>
+                    {item.brand && <div className="cart-item-sub">{item.brand} {item.model}</div>}
+                    <div className="cart-item-bottom">
+                      <div className="qty-ctrl small">
+                        <button onClick={() => updateQty(item._id, item.sellQty - 1)}>−</button>
+                        <input type="number" value={item.sellQty} min={1}
+                          onChange={e => updateQty(item._id, parseInt(e.target.value) || 1)} />
+                        <button onClick={() => updateQty(item._id, item.sellQty + 1)}>+</button>
+                      </div>
+                      <span className="cart-subtotal">₦{fmt(item.price * item.sellQty)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="cart-summary">
+                <div className="summary-row">
+                  <span>Subtotal</span>
+                  <span>₦{fmt(subtotal)}</span>
+                </div>
+
+                <div className="summary-input-row">
+                  <label>Discount (₦)</label>
+                  <input type="number" min="0" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
+                </div>
+                {discountAmt > 0 && <div className="summary-row discount"><span>Discount</span><span>-₦{fmt(discountAmt)}</span></div>}
+
+                <div className="summary-input-row">
+                  <label>VAT %</label>
+                  <input type="number" min="0" max="100" value={taxRate} onChange={e => setTaxRate(Number(e.target.value))} />
+                </div>
+                {taxAmt > 0 && <div className="summary-row"><span>VAT ({taxRate}%)</span><span>₦{fmt(taxAmt)}</span></div>}
+
+                <div className="summary-input-row">
+                  <label>Payment</label>
+                  <select value={payMethod} onChange={e => setPayMethod(e.target.value)}>
+                    {PAY_METHODS.map(m => <option key={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                <div className="cart-total">
+                  <span>TOTAL</span>
+                  <span>₦{fmt(total)}</span>
+                </div>
+
+                <button className="btn-primary full-w" onClick={handleGenerate} disabled={loading}>
+                  {loading ? 'Generating…' : '🧾 Generate Receipt'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SellPage;
