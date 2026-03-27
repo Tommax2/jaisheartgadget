@@ -152,10 +152,11 @@ const SellPage = ({ onBack }) => {
     w.print();
   };
 
-  const fmt  = n => Number(n).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+  const fmt  = n => Number(n ?? 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
   const now  = new Date(savedReceipt?.createdAt || Date.now());
   const dateStr = now.toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr = now.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+  const receiptItems = Array.isArray(savedReceipt?.items) ? savedReceipt.items : [];
 
   // ── Receipt view ──────────────────────────────────────────
   if (savedReceipt) {
@@ -179,7 +180,7 @@ const SellPage = ({ onBack }) => {
 
             <hr className="r-divider" />
 
-            {savedReceipt.items.map((item, i) => (
+            {receiptItems.map((item, i) => (
               <div key={i} className="r-item">
                 <div className="r-item-name">{item.brand ? `${item.brand} ` : ''}{item.name}</div>
                 {item.model && <div className="r-warranty">Model: {item.model}</div>}
