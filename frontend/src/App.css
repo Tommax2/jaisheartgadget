@@ -854,8 +854,27 @@ textarea:focus-visible {
 .r-total  { font-size: 16px; font-weight: bold; border-top: 2px solid #111; padding-top: 8px; margin-top: 6px; }
 .r-footer { text-align: center; font-size: 10px; color: #666; margin-top: 14px; line-height: 1.7; }
 
-.receipt-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.receipt-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  z-index: 5;
+}
 .receipt-actions button { flex: 1; }
+
+@media (max-width: 640px) {
+  .receipt-actions {
+    position: sticky;
+    bottom: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(48, 48, 64, 0.55);
+    background: rgba(9, 9, 15, 0.78);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+}
 
 /* ── RESPONSIVE ────────────────────────────────────────────── */
 @media (max-width: 900px) {
