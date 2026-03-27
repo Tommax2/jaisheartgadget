@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORY_ICONS = {
   Phones: '📱', Laptops: '💻', Tablets: '📲', TVs: '📺',
@@ -9,6 +10,31 @@ const CATEGORY_ICONS = {
 };
 
 const PAY_METHODS = ['Cash', 'Bank Transfer', 'POS / Card', 'Mobile Money'];
+
+const pageVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1], staggerChildren: 0.06 },
+  },
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.985 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } },
+  exit: { opacity: 0, y: -10, scale: 0.985, transition: { duration: 0.16 } },
+};
 
 const SellPage = ({ onBack }) => {
   const { user } = useAuth();
@@ -121,9 +147,9 @@ const SellPage = ({ onBack }) => {
   // ── Receipt view ──────────────────────────────────────────
   if (savedReceipt) {
     return (
-      <div className="sell-page">
+      <motion.div className="sell-page" variants={pageVariants} initial="hidden" animate="show">
         <div className="receipt-container">
-          <div className="receipt-paper" ref={printRef}>
+          <motion.div className="receipt-paper" ref={printRef} variants={sectionVariants}>
             <div className="r-header">
               <div className="r-shop">⚡ {user?.shopName || 'JaisHeart Gadget'}</div>
               {user?.address && <div className="r-addr">{user.address}</div>}
@@ -169,72 +195,107 @@ const SellPage = ({ onBack }) => {
               Goods sold are not returnable without receipt.<br />
               {user?.shopName || 'JaisHeart Gadget'} — Your trusted gadget partner
             </div>
-          </div>
+          </motion.div>
 
-          <div className="receipt-actions">
+          <motion.div className="receipt-actions" variants={sectionVariants}>
             <button className="btn-ghost" onClick={() => { setSavedReceipt(null); setCart([]); setCustomer({ name: '', phone: '' }); setDiscount(0); }}>
               ← New Receipt
             </button>
             <button className="btn-primary" onClick={handlePrint}>🖨️ Print Receipt</button>
             <button className="btn-ghost" onClick={onBack}>Gadgets</button>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Sell view ─────────────────────────────────────────────
   return (
-    <div className="sell-page">
-      <div className="page-header">
+    <motion.div className="sell-page" variants={pageVariants} initial="hidden" animate="show">
+      <motion.div className="page-header" variants={sectionVariants}>
         <div>
           <h2>New Receipt</h2>
           <span className="subtitle">Click gadgets to add to cart</span>
         </div>
-        <button className="btn-ghost" onClick={onBack}>← Gadgets</button>
-      </div>
+        <motion.button className="btn-ghost" onClick={onBack} whileTap={{ scale: 0.97 }}>
+          ← Gadgets
+        </motion.button>
+      </motion.div>
 
-      <div className="sell-layout">
+      <motion.div className="sell-layout" variants={sectionVariants}>
         {/* Left: Product Grid */}
-        <div className="products-panel">
+        <motion.div className="products-panel" variants={sectionVariants}>
           <div className="sell-toolbar">
             <input className="search-input" placeholder="🔍 Search gadgets…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div className="cat-pills" style={{ marginBottom: 16 }}>
             {categories.map(c => (
-              <button key={c} className={`pill ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>
+              <motion.button
+                key={c}
+                className={`pill ${catFilter === c ? 'active' : ''}`}
+                onClick={() => setCatFilter(c)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
+              >
                 {CATEGORY_ICONS[c] || ''} {c}
-              </button>
+              </motion.button>
             ))}
           </div>
-          <div className="product-grid">
+          <motion.div className="product-grid" variants={listVariants}>
             {filtered.map(p => (
-              <div key={p._id} className="product-tile" onClick={() => addToCart(p)}>
+              <motion.div
+                layout
+                key={p._id}
+                className="product-tile"
+                onClick={() => addToCart(p)}
+                variants={itemVariants}
+                whileHover={{ y: -3, scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
                 <div className="tile-cat-icon">{CATEGORY_ICONS[p.category] || '⚙️'}</div>
                 <div className="tile-name">{p.name}</div>
                 {p.brand && <div className="tile-brand">{p.brand} {p.model}</div>}
                 <div className="tile-price">₦{Number(p.price).toLocaleString()}</div>
                 <div className="tile-stock">{p.quantity} in stock</div>
                 <div className="tile-add">+ Add</div>
-              </div>
+              </motion.div>
             ))}
             {filtered.length === 0 && (
-              <div className="empty-state" style={{ gridColumn: '1/-1', padding: '40px 0' }}>
+              <motion.div
+                className="empty-state"
+                style={{ gridColumn: '1/-1', padding: '40px 0' }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22 }}
+              >
                 <div className="empty-icon">📦</div>
                 <p>No available gadgets</p>
-              </div>
+              </motion.div>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Right: Cart */}
-        <div className="cart-panel">
+        <motion.div className="cart-panel" variants={sectionVariants}>
           <div className="cart-head">
-            <h3>Cart {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}</h3>
+            <h3>
+              Cart{' '}
+              {cart.length > 0 && (
+                <motion.span
+                  key={cart.length}
+                  className="cart-badge"
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 22 }}
+                >
+                  {cart.length}
+                </motion.span>
+              )}
+            </h3>
           </div>
 
           {/* Customer info */}
-          <div className="customer-section">
+          <motion.div className="customer-section" variants={sectionVariants}>
             <div className="field-row tight">
               <div className="field">
                 <label>Customer Name</label>
@@ -245,18 +306,41 @@ const SellPage = ({ onBack }) => {
                 <input placeholder="080XXXXXXXX" value={customer.phone} onChange={e => setCustomer(c => ({ ...c, phone: e.target.value }))} />
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          {cart.length === 0 ? (
-            <div className="empty-cart">
-              <div style={{ fontSize: 48 }}>🛒</div>
-              <p>Click gadgets to add them here</p>
-            </div>
+          <AnimatePresence mode="wait" initial={false}>
+            {cart.length === 0 ? (
+              <motion.div
+                key="empty-cart"
+                className="empty-cart"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18 }}
+              >
+                <div style={{ fontSize: 48 }}>🛒</div>
+                <p>Click gadgets to add them here</p>
+              </motion.div>
           ) : (
-            <>
-              <div className="cart-items">
-                {cart.map(item => (
-                  <div key={item._id} className="cart-item">
+              <motion.div
+                key="cart"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18 }}
+              >
+              <motion.div className="cart-items" variants={listVariants}>
+                <AnimatePresence initial={false}>
+                  {cart.map(item => (
+                    <motion.div
+                      layout
+                      key={item._id}
+                      className="cart-item"
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                    >
                     <div className="cart-item-top">
                       <span className="cart-item-name">{item.name}</span>
                       <button className="remove-btn" onClick={() => removeFromCart(item._id)}>×</button>
@@ -271,11 +355,12 @@ const SellPage = ({ onBack }) => {
                       </div>
                       <span className="cart-subtotal">₦{fmt(item.price * item.sellQty)}</span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
 
-              <div className="cart-summary">
+              <motion.div className="cart-summary" variants={sectionVariants}>
                 <div className="summary-row">
                   <span>Subtotal</span>
                   <span>₦{fmt(subtotal)}</span>
@@ -305,15 +390,22 @@ const SellPage = ({ onBack }) => {
                   <span>₦{fmt(total)}</span>
                 </div>
 
-                <button className="btn-primary full-w" onClick={handleGenerate} disabled={loading}>
+                <motion.button
+                  className="btn-primary full-w"
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  whileHover={loading ? undefined : { y: -1 }}
+                  whileTap={loading ? undefined : { scale: 0.99 }}
+                >
                   {loading ? 'Generating…' : '🧾 Generate Receipt'}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+                </motion.button>
+              </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 

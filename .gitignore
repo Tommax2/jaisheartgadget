@@ -25,6 +25,7 @@ frontend/dist/
 
 # Runtime caches
 **/.cache/
+**/.npm-cache/
 **/.vite/
 **/.parcel-cache/
 
@@ -33,4 +34,3 @@ frontend/dist/
 Thumbs.db
 **/.idea/
 **/.vscode/
-
