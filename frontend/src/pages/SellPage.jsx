@@ -3,6 +3,7 @@ import axios from "../lib/api.js";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext.jsx";
 import { motion, AnimatePresence } from "framer-motion";
+import "./SellPage.css";
 
 const CATEGORY_ICONS = {
   Phones: "📱",
@@ -457,6 +458,9 @@ const SellPage = ({ onBack }) => {
                 </motion.span>
               )}
             </h3>
+            <span className="discount-icon" title="Discount">
+              💰
+            </span>
           </div>
 
           {/* Customer info */}
@@ -574,14 +578,16 @@ const SellPage = ({ onBack }) => {
                     <span>₦{fmt(subtotal)}</span>
                   </div>
 
-                  <div className="summary-input-row">
-                    <label>Discount (₦)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={discount}
-                      onChange={(e) => setDiscount(Number(e.target.value))}
-                    />
+                  <div className="discount-input-container">
+                    <div className="summary-input-row discount-row">
+                      <label>Discount (₦)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={discount}
+                        onChange={(e) => setDiscount(Number(e.target.value))}
+                      />
+                    </div>
                   </div>
                   {discountAmt > 0 && (
                     <div className="summary-row discount">

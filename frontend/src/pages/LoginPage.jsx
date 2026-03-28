@@ -1,23 +1,25 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
-import toast from 'react-hot-toast';
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext.jsx";
+import toast from "react-hot-toast";
+import "./LoginPage.css";
 
 const LoginPage = () => {
   const { login } = useAuth();
-  const [loading,  setLoading]  = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ username: '', password: '' });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [form, setForm] = useState({ username: "", password: "" });
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.username || !form.password) return toast.error('Fill in username & password');
+    if (!form.username || !form.password)
+      return toast.error("Fill in username & password");
     setLoading(true);
     try {
       await login(form.username, form.password);
-      toast.success('Welcome back!');
+      toast.success("Welcome back!");
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Something went wrong');
+      toast.error(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -32,7 +34,11 @@ const LoginPage = () => {
         <div className="login-left">
           <div className="login-left-inner">
             <div className="login-left-brand">
-              <img className="login-left-logo" src="/logo.jpeg" alt="JaisHeart Gadget" />
+              <img
+                className="login-left-logo"
+                src="/logo.jpeg"
+                alt="JaisHeart Gadget"
+              />
               <div>
                 <h1>JaisHeart Gadget</h1>
                 <p>Admin dashboard for gadgets, inventory and receipts.</p>
@@ -46,9 +52,14 @@ const LoginPage = () => {
             </div>
 
             <ul className="login-features">
-              <li><span className="dot" />Create new gadgets and manage stock</li>
-              <li><span className="dot" />Generate receipts in seconds</li>
-             
+              <li>
+                <span className="dot" />
+                Create new gadgets and manage stock
+              </li>
+              <li>
+                <span className="dot" />
+                Generate receipts in seconds
+              </li>
             </ul>
           </div>
         </div>
@@ -56,7 +67,11 @@ const LoginPage = () => {
         <div className="login-card">
           <div className="login-card-head">
             <div className="brand-icon">
-              <img className="brand-icon-img" src="/logo.jpeg" alt="JaisHeart Gadget" />
+              <img
+                className="brand-icon-img"
+                src="/logo.jpeg"
+                alt="JaisHeart Gadget"
+              />
             </div>
             <div>
               <h2>Sign in</h2>
@@ -70,7 +85,7 @@ const LoginPage = () => {
               <input
                 placeholder="Enter username"
                 value={form.username}
-                onChange={e => set('username', e.target.value)}
+                onChange={(e) => set("username", e.target.value)}
                 autoComplete="username"
               />
             </div>
@@ -79,25 +94,25 @@ const LoginPage = () => {
               <label>Password</label>
               <div className="input-wrap">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
                   value={form.password}
-                  onChange={e => set('password', e.target.value)}
+                  onChange={(e) => set("password", e.target.value)}
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   className="pw-toggle"
-                  onClick={() => setShowPassword(s => !s)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
             </div>
 
             <button className="btn-submit" disabled={loading}>
-              {loading ? <span className="spinner" /> : 'Sign In'}
+              {loading ? <span className="spinner" /> : "Sign In"}
               {!loading && <span className="btn-arrow">→</span>}
             </button>
           </form>
