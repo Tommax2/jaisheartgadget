@@ -353,14 +353,13 @@ const SellPage = ({ onBack }) => {
                 <AnimatePresence initial={false}>
                   {cart.map(item => (
                     <motion.div
-                      layout
-                      key={item._id}
-                      className="cart-item"
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="show"
-                      exit="exit"
-                    >
+  key="cart"
+  className="cart-body"   {/* ← add this */}
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  exit={{ opacity: 0, y: -10 }}
+  transition={{ duration: 0.18 }}
+>
                     <div className="cart-item-top">
                       <span className="cart-item-name">{item.name}</span>
                       <button className="remove-btn" onClick={() => removeFromCart(item._id)}>×</button>
