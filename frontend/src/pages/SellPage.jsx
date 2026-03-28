@@ -149,6 +149,7 @@ const SellPage = ({ onBack }) => {
         productId: c._id,
         name: c.name,
         brand: c.brand,
+        category: c.category,
         model: c.model,
         price: c.price,
         quantity: c.sellQty,
@@ -275,6 +276,7 @@ const SellPage = ({ onBack }) => {
             {receiptItems.map((item, i) => (
               <div key={i} className="r-item">
                 <div className="r-item-name">
+                  {(CATEGORY_ICONS[item.category] || "🔸") + " "}
                   {item.brand ? `${item.brand} ` : ""}
                   {item.name}
                 </div>
