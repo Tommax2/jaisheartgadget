@@ -65,6 +65,7 @@ const SellPage = ({ onBack }) => {
   const [catFilter, setCatFilter] = useState("All");
   const [taxRate, setTaxRate] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [discountVisible, setDiscountVisible] = useState(false);
   const [payMethod, setPayMethod] = useState("Cash");
   const [customer, setCustomer] = useState({ name: "", phone: "" });
   const [savedReceipt, setSavedReceipt] = useState(null);
@@ -375,9 +376,19 @@ const SellPage = ({ onBack }) => {
         </motion.button>
       </motion.div>
 
-      <motion.div className="sell-layout" variants={sectionVariants}>
+      <motion.div
+        className="sell-layout"
+        variants={sectionVariants}
+        initial="hidden"
+        animate="show"
+      >
         {/* Left: Product Grid */}
-        <motion.div className="products-panel" variants={sectionVariants}>
+        <motion.div
+          className="products-panel"
+          variants={sectionVariants}
+          initial="hidden"
+          animate="show"
+        >
           <div className="sell-toolbar">
             <input
               className="search-input"
@@ -442,7 +453,12 @@ const SellPage = ({ onBack }) => {
         </motion.div>
 
         {/* Right: Cart */}
-        <motion.div className="cart-panel" variants={sectionVariants}>
+        <motion.div
+          className="cart-panel"
+          variants={sectionVariants}
+          initial="hidden"
+          animate="show"
+        >
           <div className="cart-head">
             <h3>
               Cart{" "}
@@ -458,13 +474,23 @@ const SellPage = ({ onBack }) => {
                 </motion.span>
               )}
             </h3>
-            <span className="discount-icon" title="Discount">
+            <span
+              className="discount-icon"
+              title="Discount"
+              onMouseEnter={() => setDiscountVisible(true)}
+              onMouseLeave={() => setDiscountVisible(false)}
+            >
               💰
             </span>
           </div>
 
           {/* Customer info */}
-          <motion.div className="customer-section" variants={sectionVariants}>
+          <motion.div
+            className="customer-section"
+            variants={sectionVariants}
+            initial="hidden"
+            animate="show"
+          >
             <div className="field-row tight">
               <div className="field">
                 <label>Customer Name</label>
@@ -572,22 +598,29 @@ const SellPage = ({ onBack }) => {
                   </AnimatePresence>
                 </motion.div>
 
-                <motion.div className="cart-summary" variants={sectionVariants}>
+                <motion.div
+                  className="cart-summary"
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="show"
+                >
                   <div className="summary-row">
                     <span>Subtotal</span>
                     <span>₦{fmt(subtotal)}</span>
                   </div>
 
                   <div className="discount-input-container">
-                    <div className="summary-input-row discount-row">
-                      <label>Discount (₦)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={discount}
-                        onChange={(e) => setDiscount(Number(e.target.value))}
-                      />
-                    </div>
+                    {discountVisible && (
+                      <div className="summary-input-row discount-row">
+                        <label>Discount (₦)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={discount}
+                          onChange={(e) => setDiscount(Number(e.target.value))}
+                        />
+                      </div>
+                    )}
                   </div>
                   {discountAmt > 0 && (
                     <div className="summary-row discount">
