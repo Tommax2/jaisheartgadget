@@ -61,6 +61,7 @@ const SellPage = ({ onBack }) => {
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
+  const [customPrices, setCustomPrices] = useState({}); // Track custom prices per item
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");
   const [taxRate, setTaxRate] = useState(0);
@@ -123,9 +124,20 @@ const SellPage = ({ onBack }) => {
     setCart(cart.map((c) => (c._id === id ? { ...c, sellQty: val } : c)));
   };
 
-  const removeFromCart = (id) => setCart(cart.filter((c) => c._id !== id));
+  const removeFromCart = (id) => {
+    setCart(cart.filter((c) => c._id !== id));
+    setCustomPrices((prev) => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+  };
 
-  const subtotal = cart.reduce((s, c) => s + c.price * c.sellQty, 0);
+  const subtotal = cart.reduce((s, c) => {
+    const itemPrice =
+      customPrices[c._id] !== undefined ? customPrices[c._id] : c.price;
+    return s + itemPrice * c.sellQty;
+  }, 0);
   const discountAmt = Math.min(discount, subtotal);
   const taxable = subtotal - discountAmt;
   const taxAmt = taxable * (taxRate / 100);
@@ -145,17 +157,21 @@ const SellPage = ({ onBack }) => {
     if (cart.length === 0) return toast.error("Add at least one item");
     setLoading(true);
     try {
-      const items = cart.map((c) => ({
-        productId: c._id,
-        name: c.name,
-        brand: c.brand,
-        category: c.category,
-        model: c.model,
-        price: c.price,
-        quantity: c.sellQty,
-        subtotal: c.price * c.sellQty,
-        warranty: c.warranty,
-      }));
+      const items = cart.map((c) => {
+        const itemPrice =
+          customPrices[c._id] !== undefined ? customPrices[c._id] : c.price;
+        return {
+          productId: c._id,
+          name: c.name,
+          brand: c.brand,
+          category: c.category,
+          model: c.model,
+          price: itemPrice,
+          quantity: c.sellQty,
+          subtotal: itemPrice * c.sellQty,
+          warranty: c.warranty,
+        };
+      });
       const res = await axios.post("/api/receipts", {
         customerName: customer.name,
         customerPhone: customer.phone,
@@ -338,6 +354,7 @@ const SellPage = ({ onBack }) => {
                 if (receiptKey) localStorage.removeItem(receiptKey);
                 setSavedReceipt(null);
                 setCart([]);
+                setCustomPrices({});
                 setCustomer({ name: "", phone: "" });
                 setDiscount(0);
               }}
@@ -591,8 +608,35 @@ const SellPage = ({ onBack }) => {
                               +
                             </button>
                           </div>
+                          <div className="price-input-group">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={
+                                customPrices[item._id] !== undefined
+                                  ? customPrices[item._id]
+                                  : item.price
+                              }
+                              onChange={(e) =>
+                                setCustomPrices((prev) => ({
+                                  ...prev,
+                                  [item._id]:
+                                    Number(e.target.value) || item.price,
+                                }))
+                              }
+                              className="price-input"
+                              placeholder="Price"
+                              title="Click to change price"
+                            />
+                          </div>
                           <span className="cart-subtotal">
-                            ₦{fmt(item.price * item.sellQty)}
+                            ₦
+                            {fmt(
+                              (customPrices[item._id] !== undefined
+                                ? customPrices[item._id]
+                                : item.price) * item.sellQty,
+                            )}
                           </span>
                         </div>
                       </motion.div>
